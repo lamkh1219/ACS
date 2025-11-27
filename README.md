@@ -1,3 +1,3 @@
 
-A QR Code Reader<br>
-https://lamkh1219.github.io/qr_code_reader
+學生活動查詢系統<br>
+https://lamkh1219.github.io/ACS
