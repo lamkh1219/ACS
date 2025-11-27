@@ -1,259 +1,78 @@
 <!DOCTYPE html>
-<html>
+<html lang="zh-Hant">
 <head>
     <meta charset="UTF-8">
-    <title>QR Code 圖片掃描器</title>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/html5-qrcode/2.3.8/html5-qrcode.min.js"></script>
-    <style>
-        /* ==================================== */
-        /* 1. 頁面與佈局樣式 */
-        /* ==================================== */
-        body { 
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background-color: #f4f7f6; 
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            min-height: 100vh;
-            margin: 0;
-            padding: 40px 20px;
-        }
-
-        #main-container {
-            max-width: 600px; 
-            width: 100%;
-            background: #ffffff;
-            padding: 30px;
-            border-radius: 12px; 
-            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1); 
-            text-align: center;
-            /* 拖放功能相關樣式 */
-            border: 2px dashed transparent; 
-            transition: border-color 0.3s;
-        }
-
-        /* 拖曳圖片進入區域時的視覺反饋 */
-        .drag-over {
-            border-color: #007bff !important; 
-            background-color: #eaf3ff; 
-        }
-
-        h1 {
-            color: #333;
-            margin-bottom: 30px;
-            font-weight: 600;
-        }
-        
-        /* ==================================== */
-        /* 2. 檔案選擇按鈕樣式 */
-        /* ==================================== */
-        #qr-input-file {
-             display: none;
-        }
-        
-        #custom-upload-button {
-            background-color: #007bff;
-            color: white;
-            padding: 12px 25px;
-            border: none;
-            border-radius: 8px;
-            cursor: pointer;
-            font-size: 16px;
-            transition: background-color 0.3s, transform 0.1s;
-            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-        }
-
-        #custom-upload-button:hover {
-            background-color: #0056b3;
-        }
-
-        #custom-upload-button:active {
-            transform: scale(0.98);
-        }
-
-        /* ==================================== */
-        /* 3. 掃描器/圖片預覽區樣式 */
-        /* ==================================== */
-        #reader { 
-            width: 100%;
-            max-width: 400px; 
-            margin: 20px auto; 
-            border: 1px solid #ddd;
-            border-radius: 8px;
-            overflow: hidden;
-        }
-        
-        #reader > div {
-            width: 100% !important;
-            height: auto !important;
-        }
-
-        /* ==================================== */
-        /* 4. 結果顯示區樣式 (狀態視覺化) */
-        /* ==================================== */
-        #result-display { 
-            margin-top: 25px; 
-            padding: 20px; 
-            border: 2px solid #ccc; 
-            border-radius: 8px; 
-            min-height: 50px; 
-            text-align: left;
-            word-wrap: break-word;
-            transition: all 0.3s;
-        }
-
-        .scanning {
-            border-color: #ffc107 !important; 
-            background-color: #fff3cd; 
-            color: #856404;
-        }
-
-        .success { 
-            border-color: #28a745 !important; 
-            background-color: #d4edda; 
-            color: #155724;
-        }
-
-        .error { 
-            border-color: #dc3545 !important; 
-            background-color: #f8d7da; 
-            color: #721c24;
-        }
-
-        #result-display p {
-            margin: 5px 0;
-        }
-        
-        #result-display p:first-child {
-            font-weight: bold;
-        }
-        
-        #result-display a {
-            color: #007bff;
-            word-break: break-all;
-        }
-    </style>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>學生活動查詢</title>
+    <link rel="stylesheet" href="style.css">
 </head>
 <body>
 
-    <div id="main-container">
-        <h1>📸 拖放或點擊掃描 QR Code 圖片</h1>
-        
-        <p style="color:#666;">將圖片拖曳到此區域，或點擊下方按鈕</p>
+    <header>
+        <h1>學生活動查詢系統</h1>
+    </header>
 
-        <button id="custom-upload-button">選擇 QR Code 圖片進行掃描</button>
-        
-        <input type="file" id="qr-input-file" accept="image/*">
-
-        <div id="reader"></div>
-
-        <div id="result-display">
-            <p>點擊上方按鈕或拖曳圖片來開始掃描。</p>
+    <main>
+        <div class="filter-group" id="upload-section">
+            <label for="csv-upload">請上傳您的 CSV 資料檔：</label>
+            <input type="file" id="csv-upload" accept=".csv, text/csv">
+            <p class="upload-note">（上傳後，篩選器和表格將會顯示）</p>
         </div>
-    </div>
 
-    <script>
-        // 取得 HTML 元素
-        const mainContainer = document.getElementById('main-container'); 
-        const fileInput = document.getElementById('qr-input-file');
-        const customButton = document.getElementById('custom-upload-button');
-        const resultDisplay = document.getElementById('result-display');
-        
-        // 初始化 Html5Qrcode 實例
-        const html5QrCode = new Html5Qrcode("reader");
-
-        /**
-         * 執行掃描的通用函數
-         * @param {File} imageFile 要掃描的 File 物件
-         */
-        function scanImageFile(imageFile) {
-            // 清除之前的結果並設置「正在掃描」狀態
-            resultDisplay.innerHTML = '<p>⏳ 正在掃描圖片...</p>';
-            resultDisplay.className = 'scanning';
+        <div id="controls-container" style="display: none;">
             
-            html5QrCode.scanFile(imageFile, /* showImage */ true) 
-                .then(decodedText => {
-                    // 成功
-                    console.log("成功解碼的文字:", decodedText);
-                    
-                    let resultContent = '';
-                    // 檢查掃描結果是否為連結
-                    if (decodedText.startsWith('http')) {
-                        // 設定超連結：使用 target="_blank" 在新分頁開啟
-                        resultContent = `<p>掃描結果為連結 (點擊開啟新分頁)：</p><a href="${decodedText}" target="_blank" rel="noopener noreferrer">${decodedText}</a>`;
-                    } else {
-                        // 否則，顯示純文字結果
-                        resultContent = `<p>掃描結果：</p><p>${decodedText}</p>`;
-                    }
+            <div class="filter-group">
+                <label for="day-select">依星期篩選：</label>
+                <select id="day-select">
+                    <option value="">-- 請選擇星期 --</option>
+                    <option value="Mon">星期一 (Mon)</option>
+                    <option value="Tue">星期二 (Tue)</option>
+                    <option value="Wed">星期三 (Wed)</option>
+                    <option value="Thur">星期四 (Thur)</option>
+                    <option value="Fri">星期五 (Fri)</option>
+                    <option value="Sat">星期六 (Sat)</option>
+                </select>
+            </div>
 
-                    resultDisplay.innerHTML = `<p class="success">✅ 掃描成功！</p>${resultContent}`;
-                    resultDisplay.className = 'success';
-                })
-                .catch(err => {
-                    // 失敗
-                    console.error("掃描失敗原因:", err); 
-                    resultDisplay.innerHTML = `<p class="error">❌ 掃描失敗！</p><p>無法偵測到 QR Code 或條碼。(${err})</p>`;
-                    resultDisplay.className = 'error';
-                });
-        }
-        
-        // 1. 點擊按鈕功能
-        customButton.addEventListener('click', () => {
-            fileInput.click();
-        });
+            <fieldset class="filter-group">
+                <legend>或依學生查詢</legend>
+                <div class="student-filter-inputs">
+                    <div>
+                        <label for="class-select">班級 (Class)：</label>
+                        <select id="class-select">
+                            <option value="">-- 請先選擇班級 --</option>
+                            </select>
+                    </div>
+                    <div>
+                        <label for="classno-input">學號 (ClassNo)：</label>
+                        <input type="text" id="classno-input" placeholder="請輸入學號...">
+                    </div>
+                </div>
+                <div class="button-group">
+                    <button id="find-student-btn">查詢學生</button>
+                    <button id="reset-btn" class="secondary">重設</button>
+                </div>
+            </fieldset>
+            
+            <div class="table-container">
+                <table id="data-table">
+                    <thead>
+                        <tr>
+                            <th>星期 (Day)</th>
+                            <th>姓名 (Name)</th>
+                            <th>班級 (Class)</th>
+                            <th>學號 (ClassNo)</th>
+                            <th>活動 (Activity)</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        </tbody>
+                </table>
+            </div>
+        </div>
+    </main>
 
-        // 2. 檔案選擇事件
-        fileInput.addEventListener('change', e => {
-            if (e.target.files.length === 0) {
-                resultDisplay.innerHTML = '<p class="error">❌ 已取消選擇檔案。</p>';
-                resultDisplay.className = 'error';
-                return;
-            }
-
-            const imageFile = e.target.files[0];
-            scanImageFile(imageFile);
-        });
-
-        // 3. 拖放 (Drag and Drop) 事件處理
-
-        // 阻止預設行為
-        ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
-            mainContainer.addEventListener(eventName, e => {
-                e.preventDefault();
-                e.stopPropagation();
-            }, false);
-        });
-
-        // 拖曳進入時添加視覺效果
-        ['dragenter', 'dragover'].forEach(eventName => {
-            mainContainer.addEventListener(eventName, () => {
-                mainContainer.classList.add('drag-over');
-            }, false);
-        });
-
-        // 拖曳離開或放下時移除視覺效果
-        ['dragleave', 'drop'].forEach(eventName => {
-            mainContainer.addEventListener(eventName, () => {
-                mainContainer.classList.remove('drag-over');
-            }, false);
-        });
-
-        // 處理檔案放下事件
-        mainContainer.addEventListener('drop', e => {
-            const dt = e.dataTransfer;
-            const files = dt.files;
-
-            // 檢查是否有拖曳檔案
-            if (files.length > 0 && files[0].type.startsWith('image/')) {
-                const imageFile = files[0];
-                scanImageFile(imageFile); // 掃描拖放進來的第一個檔案
-            } else {
-                resultDisplay.innerHTML = '<p class="error">❌ 拖放失敗！</p><p>請拖曳有效的圖片檔案。</p>';
-                resultDisplay.className = 'error';
-            }
-        }, false);
-
-    </script>
-
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.0/papaparse.min.js"></script> 
+    <script src="script.js"></script>
 </body>
 </html>
