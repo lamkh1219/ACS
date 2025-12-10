@@ -3,76 +3,559 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>學生活動查詢</title>
-    <link rel="stylesheet" href="style.css">
+    <title>學生活動日程查詢系統</title>
+    <style>
+        body {
+            font-family: "Microsoft JhengHei", -apple-system, BlinkMacSystemFont, sans-serif;
+            background-color: #f8f9fa;
+            margin: 0;
+            padding: 20px;
+            color: #333;
+        }
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+            background-color: #fff;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+        h1 {
+            color: #2c3e50;
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        .control-panel {
+            background-color: #e9ecef;
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+        .input-group {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            background: white;
+            padding: 10px 15px;
+            border-radius: 5px;
+            border: 1px solid #dee2e6;
+        }
+        .input-group label {
+            font-weight: bold;
+            margin-right: 15px;
+            min-width: 220px;
+        }
+        .input-group input {
+            flex-grow: 1;
+            padding: 8px;
+            font-size: 16px;
+            border: 1px solid #ced4da;
+            border-radius: 4px;
+        }
+
+        /* 搜尋區塊樣式 */
+        .search-container {
+            margin-top: 10px;
+            padding: 15px;
+            background-color: #d1ecf1;
+            border-radius: 5px;
+            border: 1px solid #bee5eb;
+        }
+        .search-header {
+            font-weight: bold;
+            color: #0c5460;
+            margin-bottom: 10px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .search-controls {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap; 
+        }
+        .search-controls select, 
+        .search-controls input {
+            padding: 8px;
+            border-radius: 4px;
+            border: 1px solid #17a2b8;
+            font-size: 1rem;
+        }
+        .search-controls select {
+            background-color: white;
+            cursor: pointer;
+            min-width: 150px;
+        }
+        .search-controls input {
+            flex-grow: 1;
+        }
+        
+        .input-hidden {
+            display: none !important;
+        }
+
+        .status-badge {
+            display: inline-block;
+            padding: 5px 10px;
+            font-size: 0.85em;
+            border-radius: 4px;
+            margin-left: 10px;
+        }
+        .status-ok { background-color: #d4edda; color: #155724; }
+        .status-wait { background-color: #fff3cd; color: #856404; }
+        
+        .activity-card {
+            border: 1px solid #dee2e6;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            overflow: hidden;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+            animation: fadeIn 0.3s;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(5px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .activity-header {
+            background-color: #007bff;
+            color: white;
+            padding: 15px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+        .activity-title {
+            font-size: 1.25rem;
+            font-weight: bold;
+            margin: 0;
+        }
+        .activity-info {
+            font-size: 0.9rem;
+            background-color: rgba(255,255,255,0.2);
+            padding: 5px 10px;
+            border-radius: 4px;
+            margin-left: 5px;
+        }
+        .student-table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        .student-table th, .student-table td {
+            padding: 12px 15px;
+            text-align: left;
+            border-bottom: 1px solid #e9ecef;
+        }
+        .student-table th {
+            background-color: #f1f3f5;
+            color: #495057;
+            font-weight: 600;
+        }
+        .highlight {
+            background-color: #fff3cd;
+            font-weight: bold;
+        }
+        .lunch-tag {
+            display: inline-block;
+            padding: 3px 8px;
+            font-size: 0.8em;
+            border-radius: 10px;
+            background-color: #28a745;
+            color: white;
+        }
+        .no-lunch {
+            color: #adb5bd;
+        }
+        .error-msg {
+            color: #dc3545;
+            text-align: center;
+            margin-top: 10px;
+            font-weight: bold;
+        }
+        .hint {
+            font-size: 0.9em;
+            color: #6c757d;
+            margin-top: 5px;
+        }
+    </style>
 </head>
 <body>
 
-    <header>
-        <h1>學生活動查詢系統</h1>
-    </header>
-
-    <main>
-        <div class="filter-group" id="upload-section">
-            <label for="csv-upload">請上傳您的 CSV 資料檔：</label>
-            <input type="file" id="csv-upload" accept=".csv, text/csv">
-            <p class="upload-note">（上傳後，篩選器和表格將會顯示）</p>
+<div class="container">
+    <h1>📅 學生活動日程查詢</h1>
+    
+    <div class="control-panel">
+        <div class="input-group">
+            <label>1. 活動日程 (other_data.csv):</label>
+            <span id="scheduleStatus" class="status-badge status-wait">讀取中...</span>
         </div>
 
-        <div id="controls-container" style="display: none;">
-            
-            <div class="filter-group">
-                <label for="day-select">依星期篩選：</label>
-                <select id="day-select">
-                    <option value="">-- 請選擇星期 --</option>
-                    <option value="Mon">星期一 (Mon)</option>
-                    <option value="Tue">星期二 (Tue)</option>
-                    <option value="Wed">星期三 (Wed)</option>
-                    <option value="Thur">星期四 (Thur)</option>
-                    <option value="Fri">星期五 (Fri)</option>
-                    <option value="Sat">星期六 (Sat)</option>
-                </select>
-            </div>
+        <div class="input-group">
+            <label for="studentFile">2. 上傳學生名單 (data.csv):</label>
+            <input type="file" id="studentFile" accept=".csv">
+            <span id="studentStatus" class="status-badge status-wait">等待上傳</span>
+        </div>
+        <div class="hint">請上傳包含 Name, Class, ClassNo, Activity 等欄位的 CSV 檔案。</div>
 
-            <fieldset class="filter-group">
-                <legend>或依學生查詢</legend>
-                <div class="student-filter-inputs">
-                    <div>
-                        <label for="class-select">班級 (Class)：</label>
-                        <select id="class-select">
-                            <option value="">-- 請先選擇班級 --</option>
-                            </select>
-                    </div>
-                    <div>
-                        <label for="classno-input">學號 (ClassNo)：</label>
-                        <input type="text" id="classno-input" placeholder="請輸入學號...">
-                    </div>
+        <div class="input-group" style="margin-top: 10px; border-color: #007bff;">
+            <label for="datePicker">3. 選擇查詢日期:</label>
+            <input type="date" id="datePicker" disabled>
+        </div>
+
+        <div class="search-container">
+            <div class="search-header">
+                🔍 搜尋與篩選
+            </div>
+            <div class="search-controls">
+                <select id="searchMode" disabled>
+                    <option value="activity">模式 1: 依活動篩選 (下拉選單)</option>
+                    <option value="name">模式 2: 僅搜尋姓名</option>
+                    <option value="class">模式 3: 僅搜尋班別 (e.g. 4A)</option>
+                    <option value="classAndNo">模式 4: 班別 + 學號 (e.g. 4A + 12)</option>
+                </select>
+
+                <select id="activityList" class="input-hidden" style="flex-grow:1;">
+                    <option value="">-- 請先選擇日期 --</option>
+                </select>
+
+                <input type="text" id="inputMain" placeholder="輸入姓名..." class="input-hidden">
+
+                <input type="number" id="inputNo" placeholder="學號" class="input-hidden" style="max-width: 80px;">
+            </div>
+        </div>
+    </div>
+
+    <div id="error" class="error-msg"></div>
+    <div id="results"></div>
+</div>
+
+<script>
+    let studentsData = [];
+    let scheduleData = [];
+    let isScheduleLoaded = false;
+    let isStudentLoaded = false;
+
+    // CSV 解析函數
+    function parseCSV(text) {
+        const lines = text.split('\n').filter(line => line.trim() !== '');
+        if (lines.length < 2) return [];
+        const headers = lines[0].split(',').map(h => h.trim().replace(/^"|"$/g, '')); 
+        
+        return lines.slice(1).map(line => {
+            const values = [];
+            let match;
+            const regex = /(?:^|,)(\"(?:[^\"]+|\"\")*\"|[^,]*)/g;
+            let currentLine = line;
+            while (match = regex.exec(currentLine)) {
+                let val = match[1].replace(/^"|"$/g, '').trim();
+                values.push(val);
+            }
+            const simpleValues = line.split(',');
+            const finalValues = values.length === headers.length ? values : simpleValues;
+
+            const entry = {};
+            headers.forEach((h, i) => {
+                entry[h] = finalValues[i] ? finalValues[i].trim() : '';
+            });
+            return entry;
+        });
+    }
+
+    // 單一日期轉換 (dd/mm/yyyy -> yyyy-mm-dd)
+    function convertDDMMYYYYToISO(dateStr) {
+        if (!dateStr) return null;
+        const parts = dateStr.trim().split('/');
+        if (parts.length === 3) {
+            const day = parts[0].padStart(2, '0');
+            const month = parts[1].padStart(2, '0');
+            const year = parts[2];
+            return `${year}-${month}-${day}`;
+        }
+        return null;
+    }
+
+    // 核心日期判斷函數：檢查 activityDateStr (可能包含多個逗號分隔的日期) 是否包含 selectedISODate
+    function isActivityOnDate(activityDateStr, selectedISODate) {
+        if (!activityDateStr) return false;
+        // 分割逗號，並處理每個日期
+        const dates = activityDateStr.split(',');
+        for (let d of dates) {
+            const iso = convertDDMMYYYYToISO(d.trim());
+            if (iso === selectedISODate) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    // 介面啟用檢查
+    function checkReady() {
+        const datePicker = document.getElementById('datePicker');
+        const searchMode = document.getElementById('searchMode');
+        
+        if (isScheduleLoaded && isStudentLoaded) {
+            datePicker.disabled = false;
+            datePicker.placeholder = "請選擇日期";
+            searchMode.disabled = false;
+            updateUIByMode(); 
+        } else {
+            datePicker.disabled = true;
+            searchMode.disabled = true;
+        }
+    }
+
+    function updateUIByMode() {
+        const mode = document.getElementById('searchMode').value;
+        const activityList = document.getElementById('activityList');
+        const inputMain = document.getElementById('inputMain');
+        const inputNo = document.getElementById('inputNo');
+
+        activityList.classList.add('input-hidden');
+        inputMain.classList.add('input-hidden');
+        inputNo.classList.add('input-hidden');
+
+        if (mode === 'activity') {
+            activityList.classList.remove('input-hidden');
+        } 
+        else if (mode === 'name') {
+            inputMain.classList.remove('input-hidden');
+            inputMain.placeholder = '輸入姓名...';
+            inputMain.value = '';
+        } 
+        else if (mode === 'class') {
+            inputMain.classList.remove('input-hidden');
+            inputMain.placeholder = '輸入班別 (例如 4A)...';
+            inputMain.value = '';
+        } 
+        else if (mode === 'classAndNo') {
+            inputMain.classList.remove('input-hidden');
+            inputMain.placeholder = '班別 (e.g. 4A)';
+            inputNo.classList.remove('input-hidden');
+            inputMain.value = '';
+            inputNo.value = '';
+        }
+    }
+
+    // 當日期改變時，更新「活動下拉選單」的內容
+    function updateActivityDropdown(selectedISODate) {
+        const activitySelect = document.getElementById('activityList');
+        activitySelect.innerHTML = '<option value="">-- 顯示所有活動 --</option>';
+
+        if (!selectedISODate) return;
+
+        // 使用新的判斷邏輯找出當天的所有活動
+        const todaysActivities = scheduleData.filter(item => {
+            return isActivityOnDate(item.Date, selectedISODate);
+        });
+
+        const uniqueActivities = [...new Set(todaysActivities.map(item => item.Activity))];
+
+        uniqueActivities.forEach(actName => {
+            const option = document.createElement('option');
+            option.value = actName;
+            option.textContent = actName;
+            activitySelect.appendChild(option);
+        });
+    }
+
+    // --- 資料加載 ---
+    async function loadScheduleFromServer() {
+        const statusSpan = document.getElementById('scheduleStatus');
+        const errorDiv = document.getElementById('error');
+        try {
+            const response = await fetch('other_data.csv');
+            if (!response.ok) throw new Error('無法讀取檔案 (404)');
+            const text = await response.text();
+            scheduleData = parseCSV(text);
+            isScheduleLoaded = true;
+            statusSpan.textContent = `已載入 (共 ${scheduleData.length} 筆活動)`;
+            statusSpan.className = 'status-badge status-ok';
+            checkReady();
+        } catch (err) {
+            console.error(err);
+            statusSpan.textContent = '載入失敗';
+            statusSpan.style.backgroundColor = '#f8d7da';
+            errorDiv.textContent = '錯誤：找不到 other_data.csv。';
+        }
+    }
+
+    document.getElementById('studentFile').addEventListener('change', function(e) {
+        const file = e.target.files[0];
+        const statusSpan = document.getElementById('studentStatus');
+        if (!file) return;
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            try {
+                studentsData = parseCSV(e.target.result);
+                isStudentLoaded = true;
+                statusSpan.textContent = `已載入 (共 ${studentsData.length} 位學生)`;
+                statusSpan.className = 'status-badge status-ok';
+                checkReady();
+                refreshDisplay();
+            } catch (err) { alert("CSV 解析失敗"); }
+        };
+        reader.readAsText(file);
+    });
+
+    // --- 事件監聽 ---
+    document.getElementById('searchMode').addEventListener('change', function() {
+        updateUIByMode();
+        refreshDisplay();
+    });
+
+    document.getElementById('datePicker').addEventListener('change', function(e) {
+        const dateVal = e.target.value;
+        updateActivityDropdown(dateVal);
+        refreshDisplay();
+    });
+
+    document.getElementById('activityList').addEventListener('change', refreshDisplay);
+    document.getElementById('inputMain').addEventListener('input', refreshDisplay);
+    document.getElementById('inputNo').addEventListener('input', refreshDisplay);
+
+    function refreshDisplay() {
+        const dateVal = document.getElementById('datePicker').value;
+        if (dateVal) displayResults(dateVal);
+    }
+
+    // --- 核心顯示邏輯 ---
+    function displayResults(selectedISODate) {
+        const container = document.getElementById('results');
+        container.innerHTML = '';
+        
+        if (!selectedISODate || !isScheduleLoaded || !isStudentLoaded) return;
+
+        const mode = document.getElementById('searchMode').value;
+        const activityFilterVal = document.getElementById('activityList').value; 
+        const valMain = document.getElementById('inputMain').value.trim().toLowerCase();
+        const valNo = document.getElementById('inputNo').value.trim();
+
+        // 1. 使用新的多日期判斷邏輯篩選活動
+        let todaysActivities = scheduleData.filter(item => {
+            return isActivityOnDate(item.Date, selectedISODate);
+        });
+
+        if (todaysActivities.length === 0) {
+            container.innerHTML = `<p style="text-align:center; color:#666; margin-top:20px;">
+                📅 ${selectedISODate} 沒有找到任何活動資料。
+            </p>`;
+            return;
+        }
+
+        // 2. 模式1: 依活動篩選
+        if (mode === 'activity' && activityFilterVal !== '') {
+            todaysActivities = todaysActivities.filter(item => item.Activity === activityFilterVal);
+        }
+
+        let hasResult = false;
+
+        // 3. 遍歷活動
+        todaysActivities.forEach(activity => {
+            const activityName = activity.Activity;
+            let participants = studentsData.filter(s => s.Activity === activityName);
+
+            // 4. 模式 2, 3, 4 過濾
+            if (mode !== 'activity') {
+                participants = participants.filter(s => {
+                    const sName = (s.Name || '').toLowerCase();
+                    const sClass = (s.Class || '').toLowerCase().trim();
+                    const sNo = (s.ClassNo || '').toString().trim();
+
+                    if (mode === 'name') {
+                        return sName.includes(valMain);
+                    } 
+                    else if (mode === 'class') {
+                        return valMain === '' || sClass === valMain;
+                    } 
+                    else if (mode === 'classAndNo') {
+                        const matchClass = valMain === '' || sClass === valMain;
+                        const matchNo = valNo === '' || sNo === valNo;
+                        if (valMain === '' && valNo === '') return true;
+                        return matchClass && matchNo;
+                    }
+                    return true;
+                });
+
+                const hasInput = valMain.length > 0 || valNo.length > 0;
+                if (hasInput && participants.length === 0) {
+                    return;
+                }
+            }
+
+            hasResult = true;
+
+            const card = document.createElement('div');
+            card.className = 'activity-card';
+
+            const header = document.createElement('div');
+            header.className = 'activity-header';
+            header.innerHTML = `
+                <div class="activity-title">${activityName}</div>
+                <div style="text-align:right;">
+                    <span class="activity-info">🕒 ${activity.Time || '--'}</span>
+                    <span class="activity-info">📍 ${activity.Location || '--'}</span>
+                    <span class="activity-info">👤 ${activity.TIC || '--'}</span>
                 </div>
-                <div class="button-group">
-                    <button id="find-student-btn">查詢學生</button>
-                    <button id="reset-btn" class="secondary">重設</button>
-                </div>
-            </fieldset>
-            
-            <div class="table-container">
-                <table id="data-table">
+            `;
+            card.appendChild(header);
+
+            if (participants.length > 0) {
+                const table = document.createElement('table');
+                table.className = 'student-table';
+                table.innerHTML = `
                     <thead>
                         <tr>
-                            <th>星期 (Day)</th>
-                            <th>姓名 (Name)</th>
-                            <th>班級 (Class)</th>
-                            <th>學號 (ClassNo)</th>
-                            <th>活動 (Activity)</th>
+                            <th width="15%">班別</th>
+                            <th width="15%">學號</th>
+                            <th width="30%">姓名</th>
+                            <th width="40%">備註 / 週五午膳</th>
                         </tr>
                     </thead>
                     <tbody>
-                        </tbody>
-                </table>
-            </div>
-        </div>
-    </main>
+                        ${participants.map(s => {
+                            const stayLunch = s['Stay Lunch'] && s['Stay Lunch'].trim().length > 0;
+                            const lunchBadge = stayLunch 
+                                ? `<span class="lunch-tag">留校午膳: ${s['Stay Lunch']}</span>` 
+                                : '<span class="no-lunch">-</span>';
+                            
+                            let rowClass = (mode !== 'activity' && (valMain || valNo)) ? 'highlight' : '';
 
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.0/papaparse.min.js"></script> 
-    <script src="script.js"></script>
+                            return `
+                                <tr class="${rowClass}">
+                                    <td>${s.Class}</td>
+                                    <td>${s.ClassNo || '-'}</td>
+                                    <td>${s.Name}</td>
+                                    <td>${lunchBadge}</td>
+                                </tr>
+                            `;
+                        }).join('')}
+                    </tbody>
+                `;
+                card.appendChild(table);
+            } else {
+                const noData = document.createElement('div');
+                noData.style.padding = '15px';
+                noData.style.color = '#777';
+                noData.textContent = `無學生資料`;
+                card.appendChild(noData);
+            }
+
+            container.appendChild(card);
+        });
+
+        if (!hasResult) {
+            container.innerHTML = `<p style="text-align:center; color:#dc3545; margin-top:20px;">
+                🔍 找不到符合條件的活動或學生。
+            </p>`;
+        }
+    }
+
+    loadScheduleFromServer();
+
+</script>
+
 </body>
 </html>
