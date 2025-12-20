@@ -1,0 +1,659 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>學生活動日程查詢系統</title>
+    <style>
+        :root {
+            --primary-color: #007bff;
+            --bg-color: #f8f9fa;
+            --card-bg: #ffffff;
+        }
+
+        body {
+            font-family: "Microsoft JhengHei", -apple-system, BlinkMacSystemFont, sans-serif;
+            background-color: var(--bg-color);
+            margin: 0;
+            padding: 15px; /* 手機版縮小邊距 */
+            color: #333;
+            line-height: 1.5;
+        }
+
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+            background-color: var(--card-bg);
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+        }
+
+        h1 {
+            color: #2c3e50;
+            text-align: center;
+            margin-bottom: 25px;
+            font-size: 1.5rem;
+        }
+
+        /* --- 控制面板樣式 --- */
+        .control-panel {
+            background-color: #e9ecef;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .input-group {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            background: white;
+            padding: 10px 15px;
+            border-radius: 5px;
+            border: 1px solid #dee2e6;
+        }
+        
+        .input-group label {
+            font-weight: bold;
+            margin-right: 10px;
+            white-space: nowrap; /* 防止文字換行 */
+        }
+
+        .input-group input {
+            flex-grow: 1;
+            padding: 8px;
+            font-size: 16px; /* 防止 iOS 自動放大 */
+            border: 1px solid #ced4da;
+            border-radius: 4px;
+            min-width: 0; /* 防止 flex 子元素溢出 */
+        }
+
+        /* --- 搜尋區塊樣式 --- */
+        .search-container {
+            margin-top: 5px;
+            padding: 15px;
+            background-color: #d1ecf1;
+            border-radius: 5px;
+            border: 1px solid #bee5eb;
+        }
+
+        .search-header {
+            font-weight: bold;
+            color: #0c5460;
+            margin-bottom: 10px;
+        }
+
+        .search-controls {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap; 
+        }
+
+        .search-controls select, 
+        .search-controls input {
+            padding: 10px;
+            border-radius: 4px;
+            border: 1px solid #17a2b8;
+            font-size: 16px;
+            height: 42px; /* 統一高度 */
+            box-sizing: border-box;
+        }
+
+        .search-controls select {
+            background-color: white;
+            flex: 1 1 100%; /* 手機版預設滿寬 */
+        }
+        
+        .search-controls input {
+            flex: 1 1 100%;
+        }
+
+        .input-hidden {
+            display: none !important;
+        }
+
+        .status-badge {
+            display: inline-block;
+            padding: 4px 8px;
+            font-size: 0.8em;
+            border-radius: 4px;
+            white-space: nowrap;
+        }
+        .status-ok { background-color: #d4edda; color: #155724; }
+        .status-wait { background-color: #fff3cd; color: #856404; }
+        
+        .hint {
+            font-size: 0.85em;
+            color: #6c757d;
+            margin-top: 2px;
+        }
+
+        /* --- 結果卡片樣式 --- */
+        .activity-card {
+            border: 1px solid #dee2e6;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            background: white;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+            overflow: hidden; /* 確保圓角 */
+        }
+
+        .activity-header {
+            background-color: var(--primary-color);
+            color: white;
+            padding: 12px 15px;
+        }
+
+        .activity-title {
+            font-size: 1.1rem;
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+
+        .activity-meta {
+            font-size: 0.9rem;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            opacity: 0.95;
+        }
+        .meta-item {
+            background-color: rgba(255,255,255,0.2);
+            padding: 2px 8px;
+            border-radius: 4px;
+        }
+
+        /* --- 表格樣式 (預設桌面版) --- */
+        .student-table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        .student-table th, .student-table td {
+            padding: 10px 15px;
+            text-align: left;
+            border-bottom: 1px solid #e9ecef;
+        }
+        .student-table th {
+            background-color: #f1f3f5;
+            color: #495057;
+            font-weight: 600;
+        }
+        
+        .lunch-tag {
+            display: inline-block;
+            padding: 2px 6px;
+            font-size: 0.8em;
+            border-radius: 4px;
+            background-color: #28a745;
+            color: white;
+        }
+        .no-lunch { color: #adb5bd; font-size: 0.9em;}
+        .highlight { background-color: #fff3cd !important; }
+
+        .error-msg {
+            color: #dc3545;
+            text-align: center;
+            margin-top: 10px;
+            font-weight: bold;
+            background: #f8d7da;
+            padding: 10px;
+            border-radius: 5px;
+        }
+
+        /* =========================================
+           📱 手機版專用樣式 (Responsive CSS)
+           ========================================= */
+        @media (max-width: 600px) {
+            body { padding: 10px; }
+            .container { padding: 15px; }
+            
+            /* 輸入區塊變垂直排列 */
+            .input-group {
+                flex-direction: column;
+                align-items: flex-start;
+            }
+            .input-group label {
+                margin-bottom: 5px;
+                font-size: 0.95rem;
+            }
+            .input-group input, .input-group select {
+                width: 100%;
+                box-sizing: border-box; /* 重要：包含 padding */
+            }
+
+            /* 搜尋控制項 */
+            .search-controls { flex-direction: column; }
+            
+            /* ----- 表格轉為清單模式 (核心優化) ----- */
+            .student-table, .student-table tbody, .student-table tr, .student-table td {
+                display: block;
+                width: 100%;
+            }
+            
+            /* 隱藏表頭 */
+            .student-table thead { display: none; }
+
+            .student-table tr {
+                margin-bottom: 0;
+                border-bottom: 1px solid #eee;
+                padding: 10px 15px;
+                position: relative;
+            }
+            
+            /* 將儲存格內容重組 */
+            .student-table td {
+                padding: 2px 0;
+                border: none;
+                text-align: left;
+            }
+
+            /* 第一行：班別 + 學號 + 姓名 */
+            /* 我們在 JS 中會給 td 加 class 來控制樣式，或者用 nth-child */
+            
+            /* 班別與學號顯示在同一行，變小一點 */
+            .student-table td:nth-child(1) { /* Class */
+                display: inline-block;
+                font-weight: bold;
+                color: #007bff;
+                width: auto;
+                margin-right: 5px;
+            }
+            .student-table td:nth-child(1)::after { content: "班"; font-size: 0.8em; font-weight: normal; color: #666; }
+
+            .student-table td:nth-child(2) { /* No */
+                display: inline-block;
+                width: auto;
+                color: #666;
+                font-size: 0.9em;
+                margin-right: 10px;
+            }
+            .student-table td:nth-child(2)::before { content: "("; }
+            .student-table td:nth-child(2)::after { content: ")"; }
+
+            .student-table td:nth-child(3) { /* Name */
+                display: inline-block;
+                font-size: 1.1rem;
+                font-weight: bold;
+                color: #333;
+            }
+
+            .student-table td:nth-child(4) { /* Remark/Lunch */
+                margin-top: 4px;
+                padding-top: 4px;
+                border-top: 1px dashed #eee;
+                font-size: 0.9em;
+                color: #555;
+            }
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h1>📅 學生活動日程查詢</h1>
+    
+    <div class="control-panel">
+        <div class="input-group">
+            <label>1. 活動日程 (other_data.csv)</label>
+            <span id="scheduleStatus" class="status-badge status-wait">讀取中...</span>
+        </div>
+
+        <div class="input-group">
+            <label for="studentFile">2. 上傳學生名單 (data.csv)</label>
+            <input type="file" id="studentFile" accept=".csv">
+            <span id="studentStatus" class="status-badge status-wait" style="margin-top:5px;">等待上傳</span>
+        </div>
+        <div class="hint">請上傳包含 Name, Class, ClassNo, Activity 欄位的 CSV。</div>
+
+        <div class="input-group" style="border-left: 4px solid #007bff;">
+            <label for="datePicker">3. 選擇查詢日期</label>
+            <input type="date" id="datePicker" disabled>
+        </div>
+
+        <div class="search-container">
+            <div class="search-header">
+                🔍 搜尋與篩選
+            </div>
+            <div class="search-controls">
+                <select id="searchMode" disabled>
+                    <option value="activity">模式 1: 依活動篩選</option>
+                    <option value="name">模式 2: 僅搜尋姓名</option>
+                    <option value="class">模式 3: 僅搜尋班別</option>
+                    <option value="batch">模式 4: 批量搜尋 (e.g. 1A5, 5D18)</option>
+                </select>
+
+                <select id="activityList" class="input-hidden">
+                    <option value="">-- 請先選擇日期 --</option>
+                </select>
+
+                <input type="text" id="inputMain" placeholder="輸入姓名..." class="input-hidden">
+            </div>
+        </div>
+    </div>
+
+    <div id="error" class="error-msg" style="display:none;"></div>
+    <div id="results"></div>
+</div>
+
+<script>
+    let studentsData = [];
+    let scheduleData = [];
+    let isScheduleLoaded = false;
+    let isStudentLoaded = false;
+
+    // CSV 解析函數
+    function parseCSV(text) {
+        const lines = text.split('\n').filter(line => line.trim() !== '');
+        if (lines.length < 2) return [];
+        const headers = lines[0].split(',').map(h => h.trim().replace(/^"|"$/g, '')); 
+        
+        return lines.slice(1).map(line => {
+            const values = [];
+            let match;
+            const regex = /(?:^|,)(\"(?:[^\"]+|\"\")*\"|[^,]*)/g;
+            let currentLine = line;
+            while (match = regex.exec(currentLine)) {
+                let val = match[1].replace(/^"|"$/g, '').trim();
+                values.push(val);
+            }
+            const simpleValues = line.split(',');
+            const finalValues = values.length === headers.length ? values : simpleValues;
+
+            const entry = {};
+            headers.forEach((h, i) => {
+                entry[h] = finalValues[i] ? finalValues[i].trim() : '';
+            });
+            return entry;
+        });
+    }
+
+    function convertDDMMYYYYToISO(dateStr) {
+        if (!dateStr) return null;
+        const parts = dateStr.trim().split('/');
+        if (parts.length === 3) {
+            const day = parts[0].padStart(2, '0');
+            const month = parts[1].padStart(2, '0');
+            const year = parts[2];
+            return `${year}-${month}-${day}`;
+        }
+        return null;
+    }
+
+    function isActivityOnDate(activityDateStr, selectedISODate) {
+        if (!activityDateStr) return false;
+        const dates = activityDateStr.split(',');
+        for (let d of dates) {
+            const iso = convertDDMMYYYYToISO(d.trim());
+            if (iso === selectedISODate) return true;
+        }
+        return false;
+    }
+
+    function checkReady() {
+        const datePicker = document.getElementById('datePicker');
+        const searchMode = document.getElementById('searchMode');
+        
+        if (isScheduleLoaded && isStudentLoaded) {
+            datePicker.disabled = false;
+            datePicker.placeholder = "請選擇日期";
+            searchMode.disabled = false;
+            updateUIByMode(); 
+        } else {
+            datePicker.disabled = true;
+            searchMode.disabled = true;
+        }
+    }
+
+    function updateUIByMode() {
+        const mode = document.getElementById('searchMode').value;
+        const activityList = document.getElementById('activityList');
+        const inputMain = document.getElementById('inputMain');
+        
+        activityList.classList.add('input-hidden');
+        inputMain.classList.add('input-hidden');
+        inputMain.value = '';
+
+        if (mode === 'activity') {
+            activityList.classList.remove('input-hidden');
+        } 
+        else if (mode === 'name') {
+            inputMain.classList.remove('input-hidden');
+            inputMain.placeholder = '輸入姓名...';
+        } 
+        else if (mode === 'class') {
+            inputMain.classList.remove('input-hidden');
+            inputMain.placeholder = '輸入班別 (例如 4A)...';
+        } 
+        else if (mode === 'batch') {
+            inputMain.classList.remove('input-hidden');
+            inputMain.placeholder = '輸入代碼 (1A5, 5D18)';
+        }
+    }
+
+    function updateActivityDropdown(selectedISODate) {
+        const activitySelect = document.getElementById('activityList');
+        activitySelect.innerHTML = '<option value="">-- 顯示所有活動 --</option>';
+
+        if (!selectedISODate) return;
+
+        const todaysActivities = scheduleData.filter(item => {
+            return isActivityOnDate(item.Date, selectedISODate);
+        });
+
+        const uniqueActivities = [...new Set(todaysActivities.map(item => item.Activity))];
+
+        uniqueActivities.forEach(actName => {
+            const option = document.createElement('option');
+            option.value = actName;
+            option.textContent = actName;
+            activitySelect.appendChild(option);
+        });
+    }
+
+    async function loadScheduleFromServer() {
+        const statusSpan = document.getElementById('scheduleStatus');
+        const errorDiv = document.getElementById('error');
+        try {
+            const response = await fetch('other_data.csv');
+            if (!response.ok) throw new Error('無法讀取檔案 (404)');
+            const text = await response.text();
+            scheduleData = parseCSV(text);
+            isScheduleLoaded = true;
+            statusSpan.textContent = `✅ 載入成功 (${scheduleData.length} 筆)`;
+            statusSpan.className = 'status-badge status-ok';
+            checkReady();
+        } catch (err) {
+            console.error(err);
+            statusSpan.textContent = '載入失敗';
+            statusSpan.style.backgroundColor = '#f8d7da';
+            errorDiv.style.display = 'block';
+            errorDiv.textContent = '錯誤：找不到 other_data.csv，請確認檔案位置。';
+        }
+    }
+
+    document.getElementById('studentFile').addEventListener('change', function(e) {
+        const file = e.target.files[0];
+        const statusSpan = document.getElementById('studentStatus');
+        if (!file) return;
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            try {
+                studentsData = parseCSV(e.target.result);
+                isStudentLoaded = true;
+                statusSpan.textContent = `✅ 載入成功 (${studentsData.length} 人)`;
+                statusSpan.className = 'status-badge status-ok';
+                checkReady();
+                refreshDisplay();
+            } catch (err) { alert("CSV 解析失敗"); }
+        };
+        reader.readAsText(file);
+    });
+
+    document.getElementById('searchMode').addEventListener('change', function() {
+        updateUIByMode();
+        refreshDisplay();
+    });
+
+    document.getElementById('datePicker').addEventListener('change', function(e) {
+        const dateVal = e.target.value;
+        updateActivityDropdown(dateVal);
+        refreshDisplay();
+    });
+
+    document.getElementById('activityList').addEventListener('change', refreshDisplay);
+    document.getElementById('inputMain').addEventListener('input', refreshDisplay);
+
+    function refreshDisplay() {
+        const dateVal = document.getElementById('datePicker').value;
+        if (dateVal) displayResults(dateVal);
+    }
+
+    function displayResults(selectedISODate) {
+        const container = document.getElementById('results');
+        const errorDiv = document.getElementById('error');
+        container.innerHTML = '';
+        errorDiv.style.display = 'none';
+        
+        if (!selectedISODate || !isScheduleLoaded || !isStudentLoaded) return;
+
+        const mode = document.getElementById('searchMode').value;
+        const activityFilterVal = document.getElementById('activityList').value; 
+        const valMain = document.getElementById('inputMain').value.trim();
+
+        let todaysActivities = scheduleData.filter(item => {
+            return isActivityOnDate(item.Date, selectedISODate);
+        });
+
+        if (todaysActivities.length === 0) {
+            container.innerHTML = `<div style="text-align:center; padding:30px; color:#666;">
+                <h3>📅 ${selectedISODate}</h3>
+                <p>當天沒有安排任何活動。</p>
+            </div>`;
+            return;
+        }
+
+        if (mode === 'activity' && activityFilterVal !== '') {
+            todaysActivities = todaysActivities.filter(item => item.Activity === activityFilterVal);
+        }
+
+        // Batch parsing
+        let batchTargets = [];
+        if (mode === 'batch' && valMain.length > 0) {
+            const tokens = valMain.toUpperCase().split(/[\s,]+/).filter(t => t.length > 0);
+            const regex = /^(\d+[A-Z])(\d+)$/;
+            tokens.forEach(token => {
+                const match = token.match(regex);
+                if (match) {
+                    batchTargets.push({ cls: match[1], no: parseInt(match[2]) });
+                }
+            });
+        }
+
+        let hasResult = false;
+
+        todaysActivities.forEach(activity => {
+            const activityName = activity.Activity;
+            let participants = studentsData.filter(s => s.Activity === activityName);
+
+            if (mode !== 'activity') {
+                participants = participants.filter(s => {
+                    const sName = (s.Name || '').toLowerCase();
+                    const sClass = (s.Class || '').toUpperCase().trim();
+                    const sNo = parseInt(s.ClassNo || '0');
+                    const inputLower = valMain.toLowerCase();
+
+                    if (mode === 'name') return sName.includes(inputLower);
+                    if (mode === 'class') return valMain === '' || sClass === inputLower.toUpperCase();
+                    if (mode === 'batch') {
+                        if (batchTargets.length === 0) return true;
+                        return batchTargets.some(target => target.cls === sClass && target.no === sNo);
+                    }
+                    return true;
+                });
+
+                const hasInput = valMain.length > 0;
+                if (hasInput && participants.length === 0) return;
+            }
+
+            hasResult = true;
+
+            const card = document.createElement('div');
+            card.className = 'activity-card';
+
+            const header = document.createElement('div');
+            header.className = 'activity-header';
+            header.innerHTML = `
+                <div class="activity-title">${activityName}</div>
+                <div class="activity-meta">
+                    <span class="meta-item">🕒 ${activity.Time || '--'}</span>
+                    <span class="meta-item">📍 ${activity.Location || '--'}</span>
+                    <span class="meta-item">👤 ${activity.TIC || '--'}</span>
+                </div>
+            `;
+            card.appendChild(header);
+
+            if (participants.length > 0) {
+                const table = document.createElement('table');
+                table.className = 'student-table';
+                
+                // HTML 結構與之前相同，但 CSS 做了手機版優化
+                table.innerHTML = `
+                    <thead>
+                        <tr>
+                            <th width="15%">班別</th>
+                            <th width="15%">學號</th>
+                            <th width="30%">姓名</th>
+                            <th width="40%">備註 / 週五午膳</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${participants.map(s => {
+                            const stayLunch = s['Stay Lunch'] && s['Stay Lunch'].trim().length > 0;
+                            const lunchBadge = stayLunch 
+                                ? `<span class="lunch-tag">留校: ${s['Stay Lunch']}</span>` 
+                                : '<span class="no-lunch">-</span>';
+                            
+                            let rowClass = (mode !== 'activity' && valMain.length > 0) ? 'highlight' : '';
+
+                            return `
+                                <tr class="${rowClass}">
+                                    <td>${s.Class}</td>
+                                    <td>${s.ClassNo || '-'}</td>
+                                    <td>${s.Name}</td>
+                                    <td>${lunchBadge}</td>
+                                </tr>
+                            `;
+                        }).join('')}
+                    </tbody>
+                `;
+                card.appendChild(table);
+            } else {
+                const noData = document.createElement('div');
+                noData.style.padding = '20px';
+                noData.style.textAlign = 'center';
+                noData.style.color = '#777';
+                noData.textContent = `無符合條件的學生資料`;
+                card.appendChild(noData);
+            }
+
+            container.appendChild(card);
+        });
+
+        if (!hasResult) {
+            container.innerHTML = `<div style="text-align:center; padding:20px; color:#dc3545;">
+                <h3>🔍 查無資料</h3>
+                <p>找不到符合條件的活動或學生。</p>
+            </div>`;
+        }
+    }
+
+    loadScheduleFromServer();
+
+</script>
+
+</body>
+</html>
